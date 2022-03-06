@@ -12,6 +12,7 @@ define :blade_swell do |note, amp=1|
   synth :blade, note: note, amp: amp, attack: 0.5, attack_level: 1, decay: 0.2, sustain_level: 0.4, sustain: 0.4, release: 0.4
 end
 
+# Based on Section A.18, Sonic Pi Tutorial
 define :additive_1 do |note, amp=1|
   with_fx :flanger do
     synth :sine, note: note, amp: amp
