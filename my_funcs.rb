@@ -1,7 +1,7 @@
 # Welcome to Sonic Pi
 
-define :cool_tri do |note|
-  synth :tri, note: note, attack: 0.2, attack_level: 1, decay: 0.2, sustain_level: 0.4, sustain: 0.4, release: 0.2
+define :cool_tri do |note, amp=1|
+  synth :tri, note: note, amp: amp, attack: 0.2, attack_level: 1, decay: 0.2, sustain_level: 0.4, sustain: 0.4, release: 0.2
 end
 
 define :blade_swell do |note, amp|
