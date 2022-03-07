@@ -3,7 +3,7 @@
 sound = nil
 live_loop :midi_games do
   use_real_time
-  value = sync "/midi:i2m_musicport:1/*"
+  value = sync "/midi:*/*"
   if value.length() == 2
     if not sound == nil
       control sound, note: 0

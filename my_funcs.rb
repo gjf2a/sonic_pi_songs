@@ -43,7 +43,7 @@ end
 define :basic_midi_loop do |note_maker|
   live_loop :midi_fun do
     use_real_time
-    note, velocity = sync "/midi:i2m_musicport:1/note_on"
+    note, velocity = sync "/midi:*/note_on"
     method(note_maker).call(note, velocity / 127.0)
   end
 end
@@ -52,7 +52,7 @@ define :midi_cutoff_loop do |note_maker|
   sound = nil
   live_loop :midi_games do
     use_real_time
-    value = sync "/midi:i2m_musicport:1/*"
+    value = sync "/midi:*/*"
     if value.length() == 2
       if not sound == nil
         control sound, note: 0
