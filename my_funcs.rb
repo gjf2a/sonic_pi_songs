@@ -40,6 +40,15 @@ define :downshift do |notes, n, sc|
   return down
 end
 
+define :harmonize do |note, scale, interval|
+  where = scale.index(note)
+  if where != nil
+    return scale[where + interval - 1]
+  else
+    return nil
+  end
+end
+
 define :basic_midi_loop do |note_maker|
   live_loop :midi_fun do
     use_real_time
