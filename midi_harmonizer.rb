@@ -1,13 +1,13 @@
 run_file "~/Documents/sonic_pi_songs/my_funcs.rb"
 
-define :midi_drone_loop do |note_maker, drone_note, drone_maker, drone_amp_scaling|
+define :midi_harmonizer_loop do |note_maker, scale, interval|
   live_loop :midi_fun do
     use_real_time
     note, velocity = sync "/midi:*/note_on"
     amp = velocity / 127.0
     method(note_maker).call(note, amp)
-    method(drone_maker).call(drone_note, amp * drone_amp_scaling)
+    method(note_maker).call(harmonize(note, scale, interval), amp)
   end
 end
 
-midi_drone_loop :cool_tri, :D3, :additive_1, 0.3
+midi_harmonizer_loop :additive_1, scale(:g3, :major, num_octaves: 4), 3

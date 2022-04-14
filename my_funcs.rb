@@ -1,3 +1,7 @@
+# References
+#
+# Using vt for time: https://in-thread.sonic-pi.net/t/checking-current-time/1551/2
+
 define :basic_tri do |note, amp=1|
   synth :tri, note: note, amp: amp
 end
@@ -21,8 +25,10 @@ end
 
 define :play_melody do |note_times_list, note_maker|
   note_times_list.length().times do |index|
-    method(note_maker).call note_times_list[index][0]
-    sleep note_times_list[index][1]
+    n = note_times_list[index]
+    amp = n.length == 3 ? n[2] : 1
+    method(note_maker).call(n[0], amp)
+    sleep n[1]
   end
 end
 
@@ -72,16 +78,33 @@ define :midi_cutoff_loop do |note_maker|
   end
 end
 
-define :play_back do |recording, durations, note_maker|
-  recording.length.times do |i|
-    method(note_maker).call(recording[i][0], recording[i][1])
-    sleep durations[i]
+# midi_drone_loop :cool_tri, :D3, :additive_1, 0.3
+define :midi_drone_loop do |note_maker, drone_note, drone_maker, drone_amp_scaling|
+  live_loop :midi_fun do
+    use_real_time
+    note, velocity = sync "/midi:*/note_on"
+    amp = velocity / 127.0
+    method(note_maker).call(note, amp)
+    method(drone_maker).call(drone_note, amp * drone_amp_scaling)
   end
 end
 
-# Example: midi_sampler :additive_1, :play_back, 1
+# Example: midi_harmonizer_loop :additive_1, scale(:g3, :major, num_octaves: 4), 3
+# G Major scale matching the mandolin range, harmonizing in thirds
+define :midi_harmonizer_loop do |note_maker, scale, interval|
+  live_loop :midi_fun do
+    use_real_time
+    note, velocity = sync "/midi:*/note_on"
+    amp = velocity / 127.0
+    method(note_maker).call(note, amp)
+    method(note_maker).call(harmonize(note, scale, interval), amp)
+  end
+end
+
+# Example: midi_sampler :additive_1, :play_melody, 1
 define :midi_sampler do |note_maker, player, completion_delay|
-  notes_played = []
+  notes = []
+  amps = []
   durations = []
   last = vt
   live_loop :midi_recording do
@@ -92,10 +115,11 @@ define :midi_sampler do |note_maker, player, completion_delay|
     durations.append(duration)
     if duration > completion_delay and velocity == 0
       durations = durations[1, durations.length]
-      print notes_played
-      print durations
-      method(player).call(notes_played, durations, note_maker)
-      notes_played = []
+      zipped = notes.zip(durations, amps)
+      print(zipped)
+      method(player).call(zipped, note_maker)
+      notes = []
+      amps = []
       durations = []
       print "Replay complete"
       last = vt
@@ -103,7 +127,8 @@ define :midi_sampler do |note_maker, player, completion_delay|
       amp = velocity / 127.0
       method(note_maker).call(note, amp)
       last = current
-      notes_played.append([note, amp])
+      notes.append(note)
+      amps.append(amp)
     end
   end
 end
