@@ -1,5 +1,3 @@
-# Welcome to Sonic Pi
-
 define :basic_tri do |note, amp=1|
   synth :tri, note: note, amp: amp
 end
@@ -49,6 +47,7 @@ define :harmonize do |note, scale, interval|
   end
 end
 
+# Example: basic_midi_loop :cool_tri
 define :basic_midi_loop do |note_maker|
   live_loop :midi_fun do
     use_real_time
@@ -57,6 +56,7 @@ define :basic_midi_loop do |note_maker|
   end
 end
 
+# Example: midi_cutoff_loop :cool_tri
 define :midi_cutoff_loop do |note_maker|
   sound = nil
   live_loop :midi_games do
@@ -68,6 +68,42 @@ define :midi_cutoff_loop do |note_maker|
         control sound, amp: 0
       end
       sound = method(note_maker).call(value[0], value[1] / 127.0)
+    end
+  end
+end
+
+define :play_back do |recording, durations, note_maker|
+  recording.length.times do |i|
+    method(note_maker).call(recording[i][0], recording[i][1])
+    sleep durations[i]
+  end
+end
+
+# Example: midi_sampler :additive_1, :play_back, 1
+define :midi_sampler do |note_maker, player, completion_delay|
+  notes_played = []
+  durations = []
+  last = vt
+  live_loop :midi_recording do
+    use_real_time
+    note, velocity = sync "/midi:*/note_*"
+    current = vt
+    duration = current - last
+    durations.append(duration)
+    if duration > completion_delay and velocity == 0
+      durations = durations[1, durations.length]
+      print notes_played
+      print durations
+      method(player).call(notes_played, durations, note_maker)
+      notes_played = []
+      durations = []
+      print "Replay complete"
+      last = vt
+    else
+      amp = velocity / 127.0
+      method(note_maker).call(note, amp)
+      last = current
+      notes_played.append([note, amp])
     end
   end
 end
