@@ -103,9 +103,7 @@ end
 
 # Example: midi_sampler :additive_1, :play_melody, 1
 define :midi_sampler do |note_maker, player, completion_delay|
-  notes = []
-  amps = []
-  durations = []
+  notes, amps, durations = [], [], []
   last = vt
   live_loop :midi_recording do
     use_real_time
@@ -114,13 +112,12 @@ define :midi_sampler do |note_maker, player, completion_delay|
     duration = current - last
     durations.append(duration)
     if duration > completion_delay and velocity == 0
+      print "Replay begin"
       durations = durations[1, durations.length]
       zipped = notes.zip(durations, amps)
       print(zipped)
       method(player).call(zipped, note_maker)
-      notes = []
-      amps = []
-      durations = []
+      notes, amps, durations = [], [], []
       print "Replay complete"
       last = vt
     else
