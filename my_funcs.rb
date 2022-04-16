@@ -51,7 +51,7 @@ define :downshift do |notes, n, sc|
   return down
 end
 
-define :harmonize do |note, scale, interval|
+define :transpose do |note, scale, interval|
   where = scale.index(note)
   if where != nil
     return scale[where + interval - 1]
@@ -64,26 +64,42 @@ end
 # t = transpose_melody(melody, scale(:D4, :major, num_octaves: 4), 3)
 # play_melody(t, :additive_1)
 define :transpose_melody do |melody, scale, interval|
-  return melody.map { |note| [harmonize(note[0], scale, interval)] + note.slice(1, 2) }
+  return melody.map {|note| [transpose(note[0], scale, interval)] + note[1, 2]}
 end
 
 # Example:  
 # hm = harmonize_melody(melody, scale(:D4, :major, num_octaves: 4), 3)
 # play_melody(hm, :additive_1)
 define :harmonize_melody do |melody, scale, interval|
-  return melody.map { |note| [[note[0], harmonize(note[0], scale, interval)]] + note.slice(1, 2) }
+  return melody.map {|note| [[note[0], transpose(note[0], scale, interval)]] + note[1, 2]}
 end
 
-
-# Example: basic_midi_loop :cool_tri
-define :basic_midi_loop do |note_maker|
-  live_loop :midi_fun do
-    use_real_time
-    note, velocity = sync "/midi:*/note_on"
-    method(note_maker).call(note, velocity / 127.0)
+define :func do |f|
+  if f.class == Symbol
+    return method(f)
+  else
+    return f
   end
 end
 
+# Example: midi_loop :cool_tri
+define :midi_loop do |note_maker, before, after|
+  live_loop :midi_fun do
+    use_real_time
+    note, velocity = sync "/midi:*/note_*"
+    amp = velocity / 127.0
+    func(before).call(note, amp)
+    func(note_maker).call(note, amp)
+    func(after).call(note, amp)
+  end
+end
+
+define :basic_midi_loop do |note_maker|
+  midi_loop note_maker, lambda {|n,a|}, lambda {|n,a|}
+end
+
+# This isn't really useful anymore given other changes I've made.
+# I'm leaving it here as a demonstration of the "control" instruction.
 # Example: midi_cutoff_loop :cool_tri
 define :midi_cutoff_loop do |note_maker|
   sound = nil
@@ -102,52 +118,64 @@ end
 
 # midi_drone_loop :cool_tri, :D3, :additive_1, 0.3
 define :midi_drone_loop do |note_maker, drone_note, drone_maker, drone_amp_scaling|
-  live_loop :midi_fun do
-    use_real_time
-    note, velocity = sync "/midi:*/note_on"
-    amp = velocity / 127.0
-    method(note_maker).call(note, amp)
+  midi_loop note_maker, lambda { |note, amp|
     method(drone_maker).call(drone_note, amp * drone_amp_scaling)
-  end
+  }
 end
 
 # Example: midi_harmonizer_loop :additive_1, scale(:g3, :major, num_octaves: 4), 3
 # G Major scale matching the mandolin range, harmonizing in thirds
 define :midi_harmonizer_loop do |note_maker, scale, interval|
-  live_loop :midi_fun do
-    use_real_time
-    note, velocity = sync "/midi:*/note_on"
-    amp = velocity / 127.0
-    method(note_maker).call(note, amp)
-    method(note_maker).call(harmonize(note, scale, interval), amp)
+  midi_loop note_maker, lambda {|(note, amp)|
+    method(note_maker).call(transpose(note, scale, interval), amp)
+  }
+end
+
+define :append_time_state_array do |state_key, appendee|
+  array = get[state_key] + [appendee]
+  set state_key, array
+end
+
+define :midi_sampler_reset do
+  set :notes, []
+  set :amps, []
+  set :durations, []
+end
+
+define :midi_playback_thread do |note_maker, player, replay_delay|
+  in_thread do
+    loop do
+      wait_time = vt - get[:last]
+      print "wait_time", wait_time
+      if wait_time > replay_delay and get[:durations].length >= 2
+        print "Replay begin"
+        dur = get[:durations][1, get[:durations].length]
+        dur.append(replay_delay)
+        zipped = get[:notes].zip(dur, get[:amps])
+        midi_sampler_reset
+        method(player).call(zipped, note_maker)
+        print "Replay complete"
+      end
+      sleep 1
+    end
   end
 end
 
+define :midi_live_recorder do |note_maker|
+  midi_loop note_maker, lambda {|note, amp|
+    set :current, vt
+    duration = get[:current] - get[:last]
+    append_time_state_array(:durations, duration)
+    append_time_state_array(:notes, note)
+    append_time_state_array(:amps, amp)
+  }, lambda {|note, amp| set :last, get[:current]}
+end
+
 # Example: midi_sampler :additive_1, :play_melody, 1
-define :midi_sampler do |note_maker, player, completion_delay|
-  notes, amps, durations = [], [], []
-  last = vt
-  live_loop :midi_recording do
-    use_real_time
-    note, velocity = sync "/midi:*/note_*"
-    current = vt
-    duration = current - last
-    durations.append(duration)
-    if duration > completion_delay and velocity == 0
-      print "Replay begin"
-      durations = durations[1, durations.length]
-      zipped = notes.zip(durations, amps)
-      print(zipped)
-      method(player).call(zipped, note_maker)
-      notes, amps, durations = [], [], []
-      print "Replay complete"
-      last = vt
-    else
-      amp = velocity / 127.0
-      method(note_maker).call(note, amp)
-      last = current
-      notes.append(note)
-      amps.append(amp)
-    end
-  end
+define :midi_sampler do |note_maker, player, replay_delay|
+  midi_sampler_reset
+  set :last, vt
+  print "Sampler started at", get[:last]
+  midi_playback_thread note_maker, player, replay_delay
+  midi_live_recorder note_maker
 end
