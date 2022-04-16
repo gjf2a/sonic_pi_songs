@@ -1,7 +1,3 @@
-# References
-#
-# Using vt for time: https://in-thread.sonic-pi.net/t/checking-current-time/1551/2
-
 define :alter_note do |note, alteration|
   if note.class == Array
     return note.map { |n| n + alteration }
@@ -67,7 +63,7 @@ define :transpose_melody do |melody, scale, interval|
   return melody.map {|note| [transpose(note[0], scale, interval)] + note[1, 2]}
 end
 
-# Example:  
+# Example:
 # hm = harmonize_melody(melody, scale(:D4, :major, num_octaves: 4), 3)
 # play_melody(hm, :additive_1)
 define :harmonize_melody do |melody, scale, interval|
@@ -82,38 +78,19 @@ define :func do |f|
   end
 end
 
-# Example: midi_loop :cool_tri
-define :midi_loop do |note_maker, before, after|
+define :midi_loop do |note_maker, before|
   live_loop :midi_fun do
     use_real_time
     note, velocity = sync "/midi:*/note_*"
     amp = velocity / 127.0
     func(before).call(note, amp)
     func(note_maker).call(note, amp)
-    func(after).call(note, amp)
   end
 end
 
+# Example: basic_midi_loop :cool_tri
 define :basic_midi_loop do |note_maker|
-  midi_loop note_maker, lambda {|n,a|}, lambda {|n,a|}
-end
-
-# This isn't really useful anymore given other changes I've made.
-# I'm leaving it here as a demonstration of the "control" instruction.
-# Example: midi_cutoff_loop :cool_tri
-define :midi_cutoff_loop do |note_maker|
-  sound = nil
-  live_loop :midi_games do
-    use_real_time
-    value = sync "/midi:*/*"
-    if value.length() == 2
-      if not sound == nil
-        control sound, note: 0
-        control sound, amp: 0
-      end
-      sound = method(note_maker).call(value[0], value[1] / 127.0)
-    end
-  end
+  midi_loop note_maker, lambda {|n,a|}
 end
 
 # midi_drone_loop :cool_tri, :D3, :additive_1, 0.3
@@ -162,16 +139,17 @@ define :midi_playback_thread do |note_maker, player, replay_delay|
 end
 
 define :midi_live_recorder do |note_maker|
-  midi_loop note_maker, lambda {|note, amp|
-    set :current, vt
-    duration = get[:current] - get[:last]
+  midi_loop note_maker, lambda { |note, amp|
+    current = vt
+    duration = current - get[:last]
     append_time_state_array(:durations, duration)
     append_time_state_array(:notes, note)
     append_time_state_array(:amps, amp)
-  }, lambda {|note, amp| set :last, get[:current]}
+    set :last, current
+    print "Recording", note, amp
+  }
 end
 
-# Example: midi_sampler :additive_1, :play_melody, 1
 define :midi_sampler do |note_maker, player, replay_delay|
   midi_sampler_reset
   set :last, vt
@@ -179,3 +157,4 @@ define :midi_sampler do |note_maker, player, replay_delay|
   midi_playback_thread note_maker, player, replay_delay
   midi_live_recorder note_maker
 end
+

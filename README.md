@@ -37,11 +37,13 @@ I'm using the [Sonuus i2M Musicport](https://www.sonuus.com/products_i2m_mp.html
 * `note_off` `note` `0`
 * `pitch_bend` `amount`
 
+The basic `live_loop` MIDI function is `midi_loop`. It expects two parameters:
+* A sound synthesis function.
+* A function describing what to do before sounding the note.
+
 So far, I've written the following `live_loop` functions as MIDI event handlers:
 * `basic_midi_loop`: Handles each `note_on` event by activating a sound
 synthesis function, specified by the `note_maker` parameter.
-* `midi_cutoff_loop`: Similar to `basic_midi_loop`, except that the previous
-note is deactivated when a new `note_on` or `note_off` event arrives.
 * `midi_drone_loop`: Similar to `basic_midi_loop`, but it accompanies each
 melody note with a specified drone note. The drone note can have a separate
 sound and has a scaling factor to control its volume. Useful for playing
@@ -52,14 +54,14 @@ interval is the position in an octave, so if `interval` is `3` it will
 harmonize in thirds.
 * `midi_sampler`: This function allows a user to play a MIDI instrument
 (its sound specified by the `note_maker` parameter),
-recording the melody, until a `note_off` message of a duration given by the
-`completion_delay` parameter is received. At that point, it will play an
+recording the melody, until the amount of time given by the 
+`replay_delay` parameter has passed. At that point, it will play an
 interpretation of the melody as specified by the `player` function.
   * Thus far, the only `player` function available is the `play_melody` 
     function described above. 
   * It is intended to add some more `player` functions that perform various
     transformations on the melody.
-  * Every `player` function has the same two parameters as `play_melody`
+  * Every `player` function has to have the same two parameters as `play_melody`
     * `note_times_list`
     * `note_maker`
 
