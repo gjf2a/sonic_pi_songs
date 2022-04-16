@@ -103,7 +103,7 @@ end
 # Example: midi_harmonizer_loop :additive_1, scale(:g3, :major, num_octaves: 4), 3
 # G Major scale matching the mandolin range, harmonizing in thirds
 define :midi_harmonizer_loop do |note_maker, scale, interval|
-  midi_loop note_maker, lambda {|(note, amp)|
+  midi_loop note_maker, lambda {|note, amp|
     method(note_maker).call(transpose(note, scale, interval), amp)
   }
 end
