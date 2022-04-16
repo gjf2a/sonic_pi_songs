@@ -7,6 +7,15 @@ Pi. These efforts are currently in the following categories:
 * Encode melodies as data structures and play them back with a variety of
   synthesized sounds.
 
+## Importing the library
+
+Of course, you'll need to adjust the path to where you installed it on your
+machine, but this is the general idea.
+
+```
+run_file "~/Documents/sonic_pi_songs/my_funcs.rb"
+```
+
 ## Sound Synthesis
 
 I have written several simple sound synthesis functions which all have a
