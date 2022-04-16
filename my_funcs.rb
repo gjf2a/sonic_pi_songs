@@ -60,6 +60,16 @@ define :harmonize do |note, scale, interval|
   end
 end
 
+# Example:
+# t = transpose_melody(melody, scale(:D4, :major, num_octaves: 4), 3)
+# play_melody(t, :additive_1)
+define :transpose_melody do |melody, scale, interval|
+  return melody.map { |note| [harmonize(note[0], scale, interval)] + note.slice(1, 2) }
+end
+
+# Example:  
+# hm = harmonize_melody(melody, scale(:D4, :major, num_octaves: 4), 3)
+# play_melody(hm, :additive_1)
 define :harmonize_melody do |melody, scale, interval|
   return melody.map { |note| [[note[0], harmonize(note[0], scale, interval)]] + note.slice(1, 2) }
 end
