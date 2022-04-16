@@ -2,6 +2,14 @@
 #
 # Using vt for time: https://in-thread.sonic-pi.net/t/checking-current-time/1551/2
 
+define :alter_note do |note, alteration|
+  if note.class == Array
+    return note.map { |n| n + alteration }
+  else
+    return note + alteration
+  end
+end
+
 define :basic_tri do |note, amp=1|
   synth :tri, note: note, amp: amp
 end
@@ -19,7 +27,7 @@ define :additive_1 do |note, amp=1|
   with_fx :flanger do
     synth :sine, note: note, amp: amp
     synth :square, note: note, amp: amp
-    synth :tri, note: note + 12, amp: amp * 0.4
+    synth :tri, note: alter_note(note, 12), amp: amp * 0.4
   end
 end
 
@@ -31,7 +39,6 @@ define :play_melody do |note_times_list, note_maker|
     sleep n[1]
   end
 end
-
 
 define :downshift do |notes, n, sc|
   down = []
@@ -52,6 +59,11 @@ define :harmonize do |note, scale, interval|
     return nil
   end
 end
+
+define :harmonize_melody do |melody, scale, interval|
+  return melody.map { |note| [[note[0], harmonize(note[0], scale, interval)]] + note.slice(1, 2) }
+end
+
 
 # Example: basic_midi_loop :cool_tri
 define :basic_midi_loop do |note_maker|
