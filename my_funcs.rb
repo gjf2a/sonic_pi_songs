@@ -150,6 +150,16 @@ define :midi_live_recorder do |note_maker|
   }
 end
 
+# MIDI Sampler with playback
+#
+# note_maker specifies synth sound to use.
+#
+# player specifies how the sample is to be played back
+# when replay_delay time has passed
+#
+# Example usage: midi_sampler :additive_1, :play_melody, 1.5
+# By using :play_melody, this example will repeat the sample 
+# verbatim after 1.5 beats of silence.
 define :midi_sampler do |note_maker, player, replay_delay|
   midi_sampler_reset
   set :last, vt
@@ -158,3 +168,75 @@ define :midi_sampler do |note_maker, player, replay_delay|
   midi_live_recorder note_maker
 end
 
+# Melody analysis functions
+define :bump do |dict, key, amount|
+  if dict[key] == nil
+    dict[key] = 0
+  end
+  dict[key] += amount
+end
+
+define :melody_note_count do |melody|
+  counts = {}
+  melody.length.times do |i|
+    bump counts, melody[i][0], melody[i][1]
+  end
+  return counts.sort_by {|c| -c[1]}
+end
+
+define :deepest_root do |root, lo|
+  while root > lo do
+    root -= 12
+  end
+  return root
+end
+
+define :num_octaves do |root, hi|
+  return ((hi - root) / 12.0).ceil + 1
+end
+
+define :within do |item, collection|
+  collection.length.times do |i|
+    if collection[i] == item
+      return true
+    end
+  end
+  return false
+end
+
+define :num_missing_melody_notes do |melody, scale|
+  missing = 0
+  melody.length.times do |i|
+    if not within(melody[i][0], scale)
+      missing += 1
+    end
+  end
+  return missing
+end
+
+define :candidate_scales_for do |melody|
+  counts = melody_note_count(melody)
+  lo, hi = counts.minmax.map {|m| m[0]}
+  root = deepest_root(counts[0][0], lo)
+  octaves = num_octaves(root, hi)
+  return [:major, :minor, :dorian, :phrygian, :lydian, :mixolydian].map {|name| scale(root, name, num_octaves: octaves)}
+  #return scale_names.map {|name| scale(root, name, num_octaves: octaves)}
+end
+
+define :best_scales_for do |melody|
+  return candidate_scales_for(melody)
+  .map {|s| [num_missing_melody_notes(melody, s), s]}
+  .sort_by {|c| c[0]}
+end
+
+define :best_scale_for do |melody|
+  return best_scales_for(melody)[0][1]
+end
+
+define :play_harmonized_melody do |note_times_list, note_maker|
+  scale_used = best_scale_for note_times_list
+  interval = 3
+  hm = harmonize_melody(note_times_list, scale_used, interval)
+  print "scale", scale_used
+  play_melody hm, note_maker
+end

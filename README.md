@@ -39,6 +39,9 @@ The `play_melody` function takes two parameters:
 It then plays the given melody with the given sound. The program
 `joy_to_the_world.rb` is an example of its use.
 
+Additional melody playback functions, using the same parameters:
+* `play_harmonized_melody`: Auto-detects the scale used and plays back a melody harmonized in thirds with the detected scale.
+
 ## MIDI
 
 I'm using the [Sonuus i2M Musicport](https://www.sonuus.com/products_i2m_mp.html) to convert my mandolin playing into MIDI instructions. It issues three types of MIDI messages:
@@ -66,15 +69,14 @@ harmonize in thirds.
 recording the melody, until the amount of time given by the 
 `replay_delay` parameter has passed. At that point, it will play an
 interpretation of the melody as specified by the `player` function.
-  * Thus far, the only `player` function available is the `play_melody` 
-    function described above. 
-  * It is intended to add some more `player` functions that perform various
-    transformations on the melody.
   * Every `player` function has to have the same two parameters as `play_melody`
     * `note_times_list`
     * `note_maker`
+  * Every function listed in the Melody Playback section can be used
+    as a `player` function.
 
-### MIDI example
+
+### MIDI examples
 
 ```
 run_file "~/Documents/sonic_pi_songs/my_funcs.rb"
@@ -84,3 +86,14 @@ basic_midi_loop :blade_swell
 
 This program loads in my library, then starts up a `basic_midi_loop` using
 the `blade_swell` synthesizer sound.
+
+```
+run_file "~/Documents/sonic_pi_songs/my_funcs.rb"
+
+midi_sampler :additive_1, :play_harmonized_melody, 1.5
+```
+
+This program loads in my library, then starts up a `midi_sampler` that 
+will record a melody using the `additive_1` synthesizer sound until there is 
+a rest of 1.5 beats. At that point, it will play the melody back using that
+same sound, accompanied by a harmony melody a third higher.

@@ -78,7 +78,6 @@ define :num_missing_melody_notes do |melody, scale|
   missing = 0
   melody.length.times do |i|
     if not within(melody[i][0], scale)
-      print("missed", melody[i][0])
       missing += 1
     end
   end
@@ -96,7 +95,15 @@ define :candidate_scales_for do |melody|
   lo, hi = counts.minmax.map {|m| m[0]}
   root = deepest_root(counts[0][0], lo)
   octaves = num_octaves(root, hi)
-  return scale_names.map {|name| scale(root, name, num_octaves: octaves)}
+  return [:major, :minor, :dorian, :phrygian, :lydian, :mixolydian].map {|name| scale(root, name, num_octaves: octaves)}
+  #return scale_names.map {|name| scale(root, name, num_octaves: octaves)}
 end
 
-#print candidate_scales_for(melody)[0]
+define :best_scales_for do |melody|
+  return candidate_scales_for(melody)
+  .map {|s| [num_missing_melody_notes(melody, s), s]}
+  .sort_by {|c| c[0]}
+end
+
+print candidate_scales_for(melody).length
+print best_scales_for(melody)
