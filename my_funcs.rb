@@ -50,10 +50,28 @@ end
 define :transpose do |note, scale, interval|
   where = scale.index(note)
   if where != nil
-    return scale[where + interval - 1]
+    if interval >= 1
+      return scale[where + interval - 1]
+    elsif interval <= -2
+      return scale[where + interval + 1]
+    else
+      return nil
+    end
   else
     return nil
   end
+end
+
+define :find_interval do |note1, note2, scale|
+  return (-8..8).detect {|i| transpose(note1, scale, i) == note2}
+end
+
+define :intervals_in do |melody, scale|
+  intervals = []
+  (melody.length - 1).times do |i|
+    intervals.append(find_interval(melody[i][0], melody[i+1][0], scale))
+  end
+  return intervals
 end
 
 # Example:
@@ -131,6 +149,7 @@ define :midi_playback_thread do |note_maker, player, replay_delay|
         zipped = get[:notes].zip(dur, get[:amps])
         midi_sampler_reset
         method(player).call(zipped, note_maker)
+	print zipped
         print "Replay complete"
       end
       sleep 1
@@ -239,4 +258,5 @@ define :play_harmonized_melody do |note_times_list, note_maker|
   hm = harmonize_melody(note_times_list, scale_used, interval)
   print "scale", scale_used
   play_melody hm, note_maker
+  print "scale", scale_used
 end
