@@ -149,7 +149,7 @@ define :midi_playback_thread do |note_maker, player, replay_delay|
         zipped = get[:notes].zip(dur, get[:amps])
         midi_sampler_reset
         method(player).call(zipped, note_maker)
-	print zipped
+	print(zipped.map {|i| [i[0], i[1].round(2), i[2].round(2)]})
         print "Replay complete"
       end
       sleep 1
