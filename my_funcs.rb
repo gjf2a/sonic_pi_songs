@@ -6,6 +6,10 @@ define :alter_note do |note, alteration|
   end
 end
 
+##
+## Synthesizer Sound Functions
+##
+
 define :basic_tri do |note, amp=1|
   synth :tri, note: note, amp: amp
 end
@@ -27,6 +31,10 @@ define :additive_1 do |note, amp=1|
   end
 end
 
+## 
+## Melody playback
+##
+
 define :play_melody do |note_times_list, note_maker|
   note_times_list.length().times do |index|
     n = note_times_list[index]
@@ -35,6 +43,10 @@ define :play_melody do |note_times_list, note_maker|
     sleep n[1]
   end
 end
+
+##
+## Interval Manipulation
+##
 
 define :downshift do |notes, n, sc|
   down = []
@@ -87,6 +99,10 @@ end
 define :harmonize_melody do |melody, scale, interval|
   return melody.map {|note| [[note[0], transpose(note[0], scale, interval)]] + note[1, 2]}
 end
+
+##
+## MIDI
+##
 
 define :func do |f|
   if f.class == Symbol
@@ -176,9 +192,16 @@ end
 # player specifies how the sample is to be played back
 # when replay_delay time has passed
 #
-# Example usage: midi_sampler :additive_1, :play_melody, 1.5
+# Example usages: 
+#
+# midi_sampler :additive_1, :play_melody, 1.5
 # By using :play_melody, this example will repeat the sample 
 # verbatim after 1.5 beats of silence.
+#
+# midi_sampler :additive_1, :play_harmonized_melody, 1.5
+# Similar to the previous example, except the sample when repeated
+# will play both the sample and an automatically-detected harmony.
+#
 define :midi_sampler do |note_maker, player, replay_delay|
   midi_sampler_reset
   set :last, vt
@@ -187,7 +210,72 @@ define :midi_sampler do |note_maker, player, replay_delay|
   midi_live_recorder note_maker
 end
 
-# Melody analysis functions
+##
+## Additional replay functions
+##
+
+define :play_harmonized_melody do |note_times_list, note_maker|
+  scale_used = best_scale_for note_times_list
+  interval = 3
+  hm = harmonize_melody(note_times_list, scale_used, interval)
+  print "scale", scale_used
+  play_melody hm, note_maker
+  print "scale", scale_used
+end
+
+define :play_random_note_melody do |note_times_list, note_maker|
+  scale_used = best_scale_for note_times_list
+  r = note_times_list.map {|note| [choose(scale_used)] + note[1, 2]}
+  play_melody r, note_maker
+end
+
+define :play_weighted_random_melody do |note_times_list, note_maker|
+  play_melody(make_weighted_random_melody(note_times_list), note_maker)
+end
+
+define :invert_note do |note, scale|
+  return scale[0] + (scale[-1] - note)
+end
+
+define :invert_melody do |melody|
+  scale_match = best_scale_for melody
+  return melody.map {|n| [invert_note(n[0], scale_match), n[1], n[2]]}
+end
+
+
+##
+## Probabilistic Analysis
+##
+
+define :distribution_of do |note_times_list|
+  note_counts = melody_note_count note_times_list
+  notes, counts = note_counts.transpose
+  total = counts.inject { |a, b| a + b }
+  counts = counts.map {|c| c / total}
+  return [notes, counts].transpose
+end
+
+define :random_weighted_note do |distribution|
+  n = rand
+  i = -1
+  while i < distribution.length - 1 and n > 0 do
+    i += 1
+    n -= distribution[i][1]
+  end
+  return distribution[i][0]
+end
+
+define :make_weighted_random_melody do |note_times_list|
+  distribution = distribution_of note_times_list
+  return note_times_list.map {|note| [random_weighted_note(distribution)] + note[1, 2]}
+end
+
+
+
+##
+## Melody analysis functions
+##
+
 define :bump do |dict, key, amount|
   if dict[key] == nil
     dict[key] = 0
@@ -252,11 +340,3 @@ define :best_scale_for do |melody|
   return best_scales_for(melody)[0][1]
 end
 
-define :play_harmonized_melody do |note_times_list, note_maker|
-  scale_used = best_scale_for note_times_list
-  interval = 3
-  hm = harmonize_melody(note_times_list, scale_used, interval)
-  print "scale", scale_used
-  play_melody hm, note_maker
-  print "scale", scale_used
-end
