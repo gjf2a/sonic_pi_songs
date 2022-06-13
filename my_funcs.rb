@@ -160,17 +160,22 @@ define :midi_playback_thread do |note_maker, player, replay_delay|
       print "wait_time", wait_time
       if wait_time > replay_delay and get[:durations].length >= 2
         print "Replay begin"
-        dur = get[:durations][1, get[:durations].length]
-        dur.append(replay_delay)
-        zipped = get[:notes].zip(dur, get[:amps])
-        midi_sampler_reset
-        method(player).call(zipped, note_maker)
-	print(zipped.map {|i| [i[0], i[1].round(2), i[2].round(2)]})
+        melody = retrieve_recording replay_delay
+        method(player).call(melody, note_maker)
+	print(melody.map {|i| [i[0], i[1].round(2), i[2].round(2)]})
         print "Replay complete"
       end
       sleep 1
     end
   end
+end
+
+define :retrieve_recording do |replay_delay|
+  dur = get[:durations][1, get[:durations].length]
+  dur.append(replay_delay)
+  zipped = get[:notes].zip(dur, get[:amps])
+  midi_sampler_reset
+  return zipped
 end
 
 define :midi_live_recorder do |note_maker|
