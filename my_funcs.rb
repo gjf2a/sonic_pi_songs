@@ -31,6 +31,11 @@ define :additive_1 do |note, amp=1|
   end
 end
 
+define :additive_2 do |note, amp=1|
+  synth :blade, note: note, amp: amp
+  synth :prophet, note: note, amp: amp
+end
+
 ## 
 ## Melody playback
 ##
@@ -345,3 +350,38 @@ define :best_scale_for do |melody|
   return best_scales_for(melody)[0][1]
 end
 
+##
+## Subdividing melodies into parts based on pauses
+##
+
+define :find_pauses do |notes, offset|
+  result = []
+  notes.length().times do |i|
+    before = i - offset
+    after = i + offset
+    if before >= 0 and after < notes.length() and notes[i][1] > notes[before][1] and notes[i][1] > notes[after][1]
+      result.append(i + offset - 1)
+    end
+  end
+  return result
+end
+
+define :subdivide_using do |notes, division_indices|
+  result = []
+  current_sub = []
+  current_i = 0
+  notes.length().times do |i|
+    current_sub.append(notes[i])
+    if i == division_indices[current_i]
+      result.append(current_sub)
+      current_sub = []
+      current_i += 1
+    end
+  end
+  result.append(current_sub)
+  return result
+end
+
+define :get_subdivisions do |notes, offset|
+  return subdivide_using(notes, find_pauses(notes, offset))
+end
