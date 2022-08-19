@@ -354,16 +354,24 @@ end
 ## Subdividing melodies into parts based on pauses
 ##
 
-define :find_pauses do |notes, offset|
+define :find_pauses do |notes|
   result = []
   notes.length().times do |i|
-    before = i - offset
-    after = i + offset
+    before = i - 1
+    after = i + 1
     if before >= 0 and after < notes.length() and notes[i][1] > notes[before][1] and notes[i][1] > notes[after][1]
-      result.append(i + offset - 1)
+      result.append(i)
     end
   end
   return result
+end
+
+define :remove_zero_amp do |notes|
+  return notes.select {|n| n.length() < 3 or n[2] > 0.0}
+end
+
+define :double_all do |nums|
+  return nums.map {|n| n * 2}
 end
 
 define :subdivide_using do |notes, division_indices|
@@ -382,6 +390,11 @@ define :subdivide_using do |notes, division_indices|
   return result
 end
 
-define :get_subdivisions do |notes, offset|
-  return subdivide_using(notes, find_pauses(notes, offset))
+define :get_subdivisions do |notes|
+  no_zeros = remove_zero_amp(notes)
+  pauses = find_pauses(no_zeros)
+  if no_zeros.length() < notes.length()
+    pauses = double_all(pauses)
+  end
+  return subdivide_using(notes, pauses)
 end
