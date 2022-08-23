@@ -31,6 +31,11 @@ define :additive_1 do |note, amp=1|
   end
 end
 
+define :additive_2 do |note, amp=1|
+  synth :blade, note: note, amp: amp
+  synth :prophet, note: note, amp: amp
+end
+
 ## 
 ## Melody playback
 ##
@@ -349,3 +354,51 @@ define :best_chord_for do |melody|
   return best_matches_for(melody, [:major, :minor, :m7, :dim7, :dom7, :sus2, :sus4], :chord)[0][1]
 end
 
+##
+## Subdividing melodies into parts based on pauses
+##
+
+define :find_pauses do |notes|
+  result = []
+  notes.length().times do |i|
+    before = i - 1
+    after = i + 1
+    if before >= 0 and after < notes.length() and notes[i][1] > notes[before][1] and notes[i][1] > notes[after][1]
+      result.append(i)
+    end
+  end
+  return result
+end
+
+define :remove_zero_amp do |notes|
+  return notes.select {|n| n.length() < 3 or n[2] > 0.0}
+end
+
+define :double_all do |nums|
+  return nums.map {|n| n * 2}
+end
+
+define :subdivide_using do |notes, division_indices|
+  result = []
+  current_sub = []
+  current_i = 0
+  notes.length().times do |i|
+    current_sub.append(notes[i])
+    if i == division_indices[current_i]
+      result.append(current_sub)
+      current_sub = []
+      current_i += 1
+    end
+  end
+  result.append(current_sub)
+  return result
+end
+
+define :get_subdivisions do |notes|
+  no_zeros = remove_zero_amp(notes)
+  pauses = find_pauses(no_zeros)
+  if no_zeros.length() < notes.length()
+    pauses = double_all(pauses)
+  end
+  return subdivide_using(notes, pauses)
+end
