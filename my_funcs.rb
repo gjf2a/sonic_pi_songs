@@ -156,6 +156,7 @@ define :midi_sampler_reset do
   set :notes, []
   set :amps, []
   set :durations, []
+  set :last_recording, []
 end
 
 define :midi_playback_thread do |note_maker, player, replay_delay|
@@ -167,8 +168,8 @@ define :midi_playback_thread do |note_maker, player, replay_delay|
         print "Replay begin"
         melody = retrieve_recording replay_delay
         method(player).call(melody, note_maker)
-        print(melody.map {|i| [i[0], i[1].round(2), i[2].round(2)]})
-        print "Replay complete"
+        set :last_recording, melody.map {|i| [i[0], i[1].round(2), i[2].round(2)]}
+        print "Replay complete; melody in :last_recording"
       end
       sleep 1
     end
@@ -331,23 +332,26 @@ define :num_missing_melody_notes do |melody, scale|
   return missing
 end
 
-define :candidate_scales_for do |melody|
+define :candidates_for do |melody, candidate_list, candidate_func|
   counts = melody_note_count(melody)
   lo, hi = counts.minmax.map {|m| m[0]}
   root = deepest_root(counts[0][0], lo)
   octaves = num_octaves(root, hi)
-  return [:major, :minor, :dorian, :phrygian, :lydian, :mixolydian].map {|name| scale(root, name, num_octaves: octaves)}
-  #return scale_names.map {|name| scale(root, name, num_octaves: octaves)}
+  return candidate_list.map {|name| func(candidate_func).call(root, name, num_octaves: octaves)}
 end
 
-define :best_scales_for do |melody|
-  return candidate_scales_for(melody)
+define :best_matches_for do |melody, candidate_list, candidate_func|
+  return candidates_for(melody, candidate_list, candidate_func)
   .map {|s| [num_missing_melody_notes(melody, s), s]}
   .sort_by {|c| c[0]}
 end
 
 define :best_scale_for do |melody|
-  return best_scales_for(melody)[0][1]
+  return best_matches_for(melody, [:major, :minor, :dorian, :phrygian, :lydian, :mixolydian], :scale)[0][1]
+end
+
+define :best_chord_for do |melody|
+  return best_matches_for(melody, [:major, :minor, :m7, :dim7, :dom7, :sus2, :sus4], :chord)[0][1]
 end
 
 ##
