@@ -167,7 +167,7 @@ define :midi_playback_thread do |note_maker, player, replay_delay|
         print "Replay begin"
         melody = retrieve_recording replay_delay
         method(player).call(melody, note_maker)
-	print(melody.map {|i| [i[0], i[1].round(2), i[2].round(2)]})
+        print(melody.map {|i| [i[0], i[1].round(2), i[2].round(2)]})
         print "Replay complete"
       end
       sleep 1
@@ -398,3 +398,26 @@ define :get_subdivisions do |notes|
   end
   return subdivide_using(notes, pauses)
 end
+
+##
+## Melody remixers
+##
+
+# Concept:
+#
+# Write a function that takes a melody and a list of transformer functions.
+# - First, it finds the best matching scale for the melody.
+# - It uses get_subdivisions() to subdivide the melody.
+# - For each subdivision, it calls a transformer function to create a variation.
+# - All the variations get concatenated together into a new melody.
+#
+# Ideas for transformer functions:
+# - transpose it
+# - invert it
+# - duplicate it
+#   - maybe transform the duplicate with another function
+# - change the durations of its notes
+# - bridge its opening and closing notes with an alternative musical figure
+# - Replace a note with a musical figure
+# - Replace a musical figure with a note
+# - Substitute consistent appearances of a specific musical figure with an alternative
