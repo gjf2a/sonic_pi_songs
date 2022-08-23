@@ -346,6 +346,6 @@ define :best_scale_for do |melody|
 end
 
 define :best_chord_for do |melody|
-  return best_matches_for(melody, [:major, :minor], :chord)[0][1]
+  return best_matches_for(melody, [:major, :minor, :m7, :dim7, :dom7, :sus2, :sus4], :chord)[0][1]
 end
 
