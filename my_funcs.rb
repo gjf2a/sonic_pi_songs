@@ -425,3 +425,25 @@ end
 # - Replace a note with a musical figure
 # - Replace a musical figure with a note
 # - Substitute consistent appearances of a specific musical figure with an alternative
+
+# Alternative Concept:
+#
+# - Write an expander for each melodic figure.
+#   - The expander will look for either:
+#     - A single note if it starts and ends on the same note
+#     - A pair of notes if it starts and ends with different notes
+#   - It will then splice itself into the melody.
+# - Write a collapser for each melodic figure.
+#   - The collapser will look for the figure.
+#   - It will then collapse it into either a single note or pair of notes.
+# - Write a replacer for each melodic figure.
+#   - It will look for compatible figures, i.e., same first/last note
+#   - It will replace the compatible figure.
+# - All of these will need to know the melody's scale first, of course.
+# - I imagine using the expanders more than the collapsers.
+#   - Maybe do two expansions for each collapse.
+#   - The collapsers are there to add some unpredictability.
+
+# Related alternative:
+# - Find the long-duration notes ("peaks")
+# - Select melodic figures to connect them, possibly with intervening points.
