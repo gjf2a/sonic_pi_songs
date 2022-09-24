@@ -213,6 +213,10 @@ end
 # Similar to the previous example, except the sample when repeated
 # will play both the sample and an automatically-detected harmony.
 #
+# midi_sampler :additive_1, :play_variation_3, 1.5
+# Similar to the last two examples, except it sends the melody to a server 
+# listening on "localhost:8888", which then replies with a variation.
+#
 define :midi_sampler do |note_maker, player, replay_delay|
   midi_sampler_reset
   set :last, vt
@@ -251,6 +255,25 @@ end
 define :invert_melody do |melody|
   scale_match = best_scale_for melody
   return melody.map {|n| [invert_note(n[0], scale_match), n[1], n[2]]}
+end
+
+require 'socket'
+
+define :play_external_transform_melody do |note_times_list, note_maker, external_command|
+  s = TCPSocket.open('localhost', 8888)
+  s.puts(external_command)
+  shipment = note_times_list.join(",")
+  s.puts(shipment)
+  reply = s.gets
+  s.close
+
+  reply = eval(reply)
+  sleep(1)
+  play_melody reply, note_maker
+end
+
+define :play_variation_3 do |note_times_list, note_maker| 
+  play_external_transform_melody note_times_list, note_maker, "create_variation_3 0.75"
 end
 
 
